@@ -1,21 +1,12 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import { connect } from 'react-redux';
 
-function formatDate(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
+import { updateFlightQuery, resetFlightQuery, searchFlight } from '../actions';
+import * as selectors from '../selectors';
+import './SearchForm.css';
 
-const DEFAULT_STATE = {
-  from: 'WAW',
-  to: 'ATL',
-  departureDate: formatDate(new Date()),
-  returnDate: formatDate(new Date()),
-};
-
-export default class SearchForm extends Component {
+class SearchForm extends Component {
   static propTypes = {
     airports: PropTypes.arrayOf(PropTypes.shape({
       id: PropTypes.number.isRequired,
@@ -23,29 +14,27 @@ export default class SearchForm extends Component {
       city: PropTypes.string.isRequired,
       code: PropTypes.string.isRequired,
     })),
-    initialValues: PropTypes.shape({
+    flightQuery: PropTypes.shape({
       from: PropTypes.string,
       to: PropTypes.string,
       departureDate: PropTypes.string,
       returnDate: PropTypes.string,
     }),
-    onSubmit: PropTypes.func.isRequired,
-    onReset: PropTypes.func.isRequired,
+    updateFlightQuery: PropTypes.func.isRequired,
+    resetFlightQuery: PropTypes.func.isRequired,
+    searchFlight: PropTypes.func.isRequired,
   };
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      ...DEFAULT_STATE,
-      ...props.initialValues
-    };
+  state = this.props.flightQuery;
+
+  componentWillReceiveProps({ flightQuery }) {
+    this.setState(flightQuery);
   }
 
   handleSubmit = (event) => {
     event.preventDefault();
-    const { onSubmit } = this.props;
-    const { from, to, departureDate, returnDate } = this.state;
-    onSubmit({ from, to, departureDate, returnDate });
+    this.props.updateFlightQuery(this.state);
+    this.props.searchFlight(this.state);
   };
 
   handleFromChange = (event) => {
@@ -57,12 +46,10 @@ export default class SearchForm extends Component {
   };
 
   handleDepartureDateChange = (event) => {
-    global.console.warn(event.target.value);
     this.setState({ departureDate: event.target.value });
   };
 
   handleReturnDateChange = (event) => {
-    global.console.warn(event.target.value);
     this.setState({ returnDate: event.target.value } );
   };
 
@@ -73,6 +60,7 @@ export default class SearchForm extends Component {
       <form
         name="search"
         method="POST"
+        className="SearchForm"
         onSubmit={this.handleSubmit}
         onReset={this.handleReset}
       >
@@ -124,3 +112,16 @@ export default class SearchForm extends Component {
     );
   }
 }
+
+function mapStateToProps(state) {
+  return {
+    airports: selectors.getAirportList(state),
+    flightQuery: selectors.getFlightQuery(state),
+  };
+}
+
+export default connect(mapStateToProps, {
+  updateFlightQuery,
+  resetFlightQuery,
+  searchFlight,
+})(SearchForm);

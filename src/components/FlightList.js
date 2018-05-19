@@ -1,6 +1,9 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import { connect } from 'react-redux';
 
+import { updateFlightFilter, resetFlightFilter, resetFlightSearch } from '../actions';
+import * as selectors from '../selectors';
 import './FlightList.css';
 
 function aggregate(path) {
@@ -18,7 +21,7 @@ function aggregate(path) {
   });
 }
 
-export default class FlightList extends Component {
+class FlightList extends Component {
   static propTypes = {
     flights: PropTypes.arrayOf(PropTypes.shape({
       id: PropTypes.number.isRequired,
@@ -42,7 +45,9 @@ export default class FlightList extends Component {
       })).isRequired,
       price: PropTypes.number.isRequired,
     })).isRequired,
-    onReset: PropTypes.func.isRequired,
+    updateFlightFilter: PropTypes.func.isRequired,
+    resetFlightFilter: PropTypes.func.isRequired,
+    resetFlightSearch: PropTypes.func.isRequired,
   };
 
   state = {
@@ -86,11 +91,14 @@ export default class FlightList extends Component {
     });
   };
 
+  handleNavigateBack = () => {
+    this.props.resetFlightSearch();
+  };
+
   render() {
-    const { onReset } = this.props;
     const { flights, priceFrom, priceTo } = this.state;
     return (
-      <div className="flightList">
+      <div className="FlightList">
         <div>
           <form>
             <label>
@@ -112,14 +120,14 @@ export default class FlightList extends Component {
               />
             </label>
           </form>
-          <button type="button" onClick={onReset}>Back to search</button>
+          <button type="button" onClick={this.handleNavigateBack}>Back to search</button>
         </div>
         <ul>
           {flights.map(flight => {
             const { price } = flight;
             const { duration, airports } = aggregate(flight.inboundPath);
             return (
-              <li key={String(flight.id)} className="flight">
+              <li key={String(flight.id)} className="FlightList-flight">
                 <div>Price: ${price.toFixed(0)}</div>
                 <div>Duration: {duration.toFixed(0)}h</div>
                 {airports.length > 1 ? (
@@ -135,3 +143,16 @@ export default class FlightList extends Component {
     );
   }
 }
+
+function mapStateToProps(state) {
+  return {
+    flightFilter: selectors.getFlightFilter(state),
+    flights: selectors.getFlightList(state),
+  };
+}
+
+export default connect(mapStateToProps, {
+  updateFlightFilter,
+  resetFlightFilter,
+  resetFlightSearch,
+})(FlightList);
